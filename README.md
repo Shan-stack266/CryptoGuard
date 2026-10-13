@@ -78,3 +78,23 @@ Model reviews are stored on existing event model JSON, with reviewer/time, and c
 
 The production build no longer inherits NODE_ENV=development from the server template. Server production deployment should set NODE_ENV=production with HTTPS. All original cipher tests and API authorization checks remain. See docs/master-prompt-review.md for the final mapping and remaining deployment checks.
 
+
+
+## Vercel deployment
+
+Vercel serves the Vite build and `api/handler.js` runs the existing backend. `vercel.json` routes `/api/*` to that function. The project root should be the directory containing package.json and vercel.json; build command is `npm run build`, output is `dist`.
+
+In Vercel Project Settings > Environment Variables, add these for Production, using the values from your local ignored `.env`:
+
+| Variable | Value |
+| --- | --- |
+| SUPABASE_URL | Your Supabase project URL |
+| SUPABASE_ANON_KEY | Your Supabase anon key |
+| SUPABASE_SERVICE_ROLE_KEY | Your server-only Supabase service key |
+| APP_ORIGIN | https://cryptoguard-two.vercel.app |
+
+Do not use VITE_ prefixes for these secrets. Redeploy after saving environment changes. Set the Supabase Auth Site URL and recovery redirect URL to https://cryptoguard-two.vercel.app. For preview deployments, explicitly set their APP_ORIGIN; production allows only configured origins.
+
+Check https://cryptoguard-two.vercel.app/api/health: it must return JSON with configured:true. An unauthenticated /api/auth/session should return JSON with HTTP 401. A 404 means the API function/routing has not been deployed; HTTP 503 means environment configuration is missing or invalid. Health confirms configuration presence, not a successful database transaction.
+
+The database-backed failed-login lock and revocable sessions persist across function instances. The in-memory request burst counters apply per running function instance; a deployment-wide rate limit requires shared storage or a platform rule.

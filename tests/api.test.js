@@ -20,8 +20,9 @@ function fixture(role = 'user') {
   }
   const auth = { async verify(token) { return token === 'valid' ? { id: userID, email: 'real-user@example.test' } : null }, async login(email,password) { return password === 'correctpassword' ? { user: { id: userID,email }, session: { access_token: 'valid',refresh_token:'refresh',expires_in:3600 } } : null }, async refresh() { return null }, async logout() {}, async signup() {}, async recover() {}, async password() {} }
   const handler = createHandler({ store,auth,config: { ready: true, origin: 'http://localhost:5173',secure:true,trustProxy:false } })
-  async function request(path, body, { cookie=`cg_access=valid; cg_session=${'a'.repeat(64)}`,origin='http://localhost:5173',method=body === undefined ? 'GET' : 'POST' } = {}) {
+  async function request(path, body, { cookie=`cg_access=valid; cg_session=${'a'.repeat(64)}`,origin='http://localhost:5173',method=body === undefined ? 'GET' : 'POST',parsedBody } = {}) {
     const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)])
+    if (parsedBody !== undefined) req.body=parsedBody
     req.url=path; req.method=method; req.headers={ cookie,origin,'user-agent':'test-browser','x-forwarded-for':'203.0.113.200' }; req.socket={ remoteAddress:'192.0.2.1' }
     const headers={}; let payload
     const res={ setHeader(name,value) { headers[name]=value }, end(value) { payload=JSON.parse(value) },statusCode:200 }
@@ -96,4 +97,14 @@ test('Password change revokes old application sessions and renews the current se
  assert.equal(result.status,200)
  assert.ok(result.headers['Set-Cookie'].some(cookie=>cookie.startsWith('cg_session=')))
  assert.equal((await app.request('/api/state')).status,401)
+})
+
+
+test('Vercel parsed request bodies retain validation, login and payload limits', async () => {
+  const app=fixture()
+  const result=await app.request('/api/auth/login',{}, {parsedBody:{email:'real-user@example.test',password:'correctpassword'}})
+  assert.equal(result.status,200)
+  assert.ok(result.headers['Set-Cookie'].every(value=>value.includes('Secure')))
+  assert.equal((await app.request('/api/auth/login',{}, {parsedBody:'x'.repeat(65537)})).status,413)
+  assert.equal((await app.request('/api/auth/login',{}, {parsedBody:'invalid json'})).status,400)
 })

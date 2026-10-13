@@ -54,7 +54,12 @@ export function createHandler({ store, auth, config }) {
       const ip = config.trustProxy ? String(request.headers['x-forwarded-for'] ?? request.socket.remoteAddress).split(',')[0].trim() : request.socket.remoteAddress.replace(/^::ffff:/, '')
       if (request.method !== 'GET' && !origins.has(request.headers.origin)) throw fail(403, 'Request origin is not allowed.')
       let text = ''
-      for await (const chunk of request) { text += chunk; if (Buffer.byteLength(text) > 65536) throw fail(413, 'Request is too large.') }
+      if (request.body !== undefined) {
+        text = typeof request.body === 'string' ? request.body : JSON.stringify(request.body)
+        if (Buffer.byteLength(text) > 65536) throw fail(413, 'Request is too large.')
+      } else {
+        for await (const chunk of request) { text += chunk; if (Buffer.byteLength(text) > 65536) throw fail(413, 'Request is too large.') }
+      }
       let body = {}
       if (text) { try { body = JSON.parse(text) } catch { throw fail(400, 'Invalid JSON.') } }
       const cookies = cookieMap(request)

@@ -1,0 +1,43 @@
+// Temporary external dependency; no connection to a real Supabase project.
+const { PGlite } = require(process.env.PGLITE_MODULE || `${process.env.TEMP}/cinifix-sql-qa/node_modules/@electric-sql/pglite`)
+const fs = require('node:fs'), assert = require('node:assert/strict')
+async function main() {
+  const db = new PGlite()
+  try {
+    await db.exec("create schema auth; create role anon; create role authenticated; create role service_role; create table auth.users(id uuid primary key,email text,encrypted_password text,email_confirmed_at timestamptz,confirmation_token text,updated_at timestamptz default now(),created_at timestamptz default now()); create function auth.uid() returns uuid language sql as $$ select null::uuid $$;")
+    await db.exec(fs.readFileSync('database/supabase-schema.sql','utf8'))
+    await db.exec(fs.readFileSync('database/supabase-schema.sql','utf8'))
+    await db.exec(fs.readFileSync('database/ias-master-migration.sql','utf8'))
+    await db.exec(fs.readFileSync('database/ias-master-migration.sql','utf8'))
+    await db.exec("insert into auth.users(id,email,encrypted_password) values('11111111-1111-4111-8111-111111111111','sql-test@example.test','managed-hash');")
+    assert.equal((await db.query('select role from public.cg_profiles')).rows[0].role,'user')
+    assert.equal((await db.query('select count(*)::int as total from public.cg_account_logs')).rows[0].total,1)
+    for(let i=0;i<5;i++) await db.query("select public.cg_login_failure('sql-test@example.test')")
+    const profile=(await db.query('select * from public.cg_profiles')).rows[0]
+    assert.ok(profile.locked_until)
+    assert.equal((await db.query('select failures from public.cg_login_counters')).rows[0].failures,5)
+    await db.exec("update auth.users set encrypted_password='new-managed-hash'; update public.cg_profiles set role='admin',active=false;")
+    const operations=(await db.query('select operation from public.cg_account_logs')).rows.map((row) => row.operation)
+    assert.ok(operations.includes('Password changed')); assert.ok(operations.includes('Account access updated'))
+    assert.equal((await db.query("select count(*)::int as total from public.cg_events")).rows[0].total,0)
+    assert.equal((await db.query("select count(*)::int as total from public.cg_cipher_history")).rows[0].total,0)
+    await db.exec('set role authenticated;')
+    await assert.rejects(() => db.query('select * from public.cg_profiles'), /permission denied/)
+    await assert.rejects(() => db.query("select public.cg_login_failure('sql-test@example.test')"), /permission denied/)
+    await db.exec('reset role;')
+    const grantSQL=fs.readFileSync('database/grant-personal-admin.sql','utf8')
+    await assert.rejects(()=>db.exec(grantSQL),/does not exist/)
+    await db.exec('rollback;')
+    await db.exec("insert into auth.users(id,email,encrypted_password) values('22222222-2222-4222-8222-222222222222','daguimolshan0@gmail.com','existing-hash'),('33333333-3333-4333-8333-333333333333','ordinary-test@example.test','ordinary-hash'); update public.cg_profiles set active=false,locked_until=now()+interval '15 minutes' where email='daguimolshan0@gmail.com';")
+    await db.exec(grantSQL)
+    const personal=(await db.query("select p.role,p.active,p.locked_until,u.email_confirmed_at,u.encrypted_password from public.cg_profiles p join auth.users u on u.id=p.id where p.email='daguimolshan0@gmail.com'")).rows[0]
+    assert.equal(personal.role,'admin');assert.equal(personal.active,true);assert.equal(personal.locked_until,null);assert.ok(personal.email_confirmed_at);assert.equal(personal.encrypted_password,'existing-hash')
+    const confirmSQL=fs.readFileSync('database/confirm-existing-users.sql','utf8')
+    await db.exec(confirmSQL)
+    assert.equal((await db.query('select count(*)::int as total from auth.users where email_confirmed_at is null')).rows[0].total,0)
+    assert.equal((await db.query("select role from public.cg_profiles where email='ordinary-test@example.test'")).rows[0].role,'user')
+    await db.exec(confirmSQL)
+    console.log('SQL validation passed: schema/triggers/locks/permissions; personal admin grant confirms, activates and unlocks only the chosen account without changing its password; missing-account guard; bulk confirmation reruns without promoting ordinary users.')
+  } finally { await db.close() }
+}
+main().catch((error) => { console.error(error.message); process.exitCode=1 })

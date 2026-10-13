@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">CRYPTOGUARD</title>
+  <rect width="64" height="64" rx="16" fill="#08080a"/>
+  <path d="M32 10 49 17v15c0 11-7 18-17 23-10-5-17-12-17-23V17Z" fill="#ff3b1d" fill-opacity=".12" stroke="#ff3b1d" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="24" y="28" width="16" height="13" rx="3" fill="none" stroke="#f3f1ea" stroke-width="2.5"/>
+  <path d="M27 28v-4a5 5 0 0 1 10 0v4" fill="none" stroke="#f3f1ea" stroke-width="2.5"/>
+  <path d="M32 33v3" stroke="#ff3b1d" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

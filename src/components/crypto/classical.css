@@ -1,0 +1,51 @@
+.classical-studio { display: grid; gap: 1.25rem; min-width: 0; }
+.stack-view, .stack-view > *, .stack-view .glass-panel, .stack-view .view-header > div { min-width: 0; max-width: 100%; }
+.stack-view .eyebrow { max-width: 100%; overflow-wrap: anywhere; }
+.stack-view .panel-heading { flex-wrap: wrap; }
+.stack-view .cipher-output, .stack-view .plain-output { overflow-wrap: anywhere; }
+.cipher-selector { display: flex; flex-wrap: wrap; gap: .6rem; }
+.cipher-selector button, .cipher-letter-steps button { min-height: 44px; padding: .7rem 1rem; color: var(--foreground); background: var(--surface); border: 1px solid var(--line-strong); transition: background 160ms ease; }
+.cipher-selector button[aria-pressed="true"], .cipher-letter-steps button[aria-pressed="true"] { background: var(--accent); color: var(--background); border-color: var(--accent); }
+.cipher-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 1.25rem; align-items: start; }
+.cipher-layout > *, .cipher-processing, .cipher-block { min-width: 0; }
+.cipher-controls, .cipher-visualization { padding: 1.5rem; }
+.cipher-controls h2, .cipher-visualization h2 { font-size: 1.5rem; font-weight: 500; margin-top: .5rem; }
+.cipher-note { color: var(--muted); line-height: 1.65; font-size: .9rem; letter-spacing: normal; text-transform: none; overflow-wrap: anywhere; }
+.cipher-controls input { padding-inline: .8rem; min-height: 44px; }
+.cipher-controls textarea { resize: vertical; font-family: ui-monospace, Consolas, monospace; line-height: 1.6; min-height: 9rem; }
+.cipher-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.cipher-actions button { flex: 1 1 6rem; padding: .8rem; min-height: 44px; }
+.classical-studio button:disabled { opacity: .45; cursor: default; }
+.classical-studio :is(button, input, textarea, [tabindex]):focus-visible, .aes-studio summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.cipher-error { color: var(--accent-2); line-height: 1.5; }
+.cipher-table-scroll { width: 100%; max-width: 100%; overflow: auto; max-height: 32rem; margin-block: 1rem; overscroll-behavior: contain; }
+.cipher-visualization table { font-family: ui-monospace, Consolas, monospace; }
+.cipher-visualization caption { text-align: left; padding: .75rem 0; color: var(--muted); font-family: var(--font-sans); line-height: 1.5; }
+.cipher-visualization :is(th, td) { border: 1px solid var(--line-strong); padding: .65rem; text-align: center; font-size: .85rem; letter-spacing: normal; }
+.cipher-visualization th { color: var(--foreground); background: var(--surface-2); }
+.cipher-square { width: min(100%, 24rem); table-layout: fixed; margin-bottom: 1rem; }
+.cipher-square td { height: 3rem; font-size: 1rem; }
+.cipher-alphabet { width: max-content; min-width: 100%; }
+.cipher-alphabet td { min-width: 2.2rem; }
+.cipher-alphabet th { min-width: 6rem; }
+.cipher-tabula { width: max-content; }
+.cipher-tabula :is(th, td) { min-width: 2.1rem; height: 2.1rem; padding: .4rem; }
+.cipher-tabula thead th { position: sticky; top: 0; z-index: 2; }
+.cipher-tabula tbody th { position: sticky; left: 0; z-index: 1; }
+.cipher-tabula .highlight { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--foreground); }
+.cipher-tabula .intersection { background: var(--accent); color: var(--background); font-weight: 700; }
+.cipher-processing { margin-top: 1.5rem; display: grid; gap: .75rem; }
+.cipher-processing h3 { font-size: 1rem; }
+.cipher-block { border-top: 1px solid var(--line-strong); padding-top: 1rem; }
+.cipher-block h4, .cipher-trace { overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; line-height: 1.7; }
+.cipher-letter-steps { display: flex; flex-wrap: wrap; gap: .4rem; max-height: 15rem; overflow: auto; }
+.cipher-letter-steps button { font-family: ui-monospace, Consolas, monospace; font-size: .8rem; }
+.aes-studio { padding: 1.25rem; min-width: 0; }
+.aes-studio summary { cursor: pointer; line-height: 1.5; }
+.aes-studio .studio-grid { margin-top: 1.25rem; }
+.dashboard-shell .stack-view .glass-panel { background: var(--surface); border-color: var(--line-strong); border-radius: .9rem; }
+.dashboard-shell .stack-view .workbench :is(input, textarea, select) { color: var(--foreground); background: var(--background); }
+.dashboard-shell .stack-view .view-header h1 { font-family: var(--font-sans); font-size: clamp(1.6rem, 3vw, 2.5rem); text-transform: none; }
+@media (max-width: 1000px) { .cipher-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .cipher-controls, .cipher-visualization { padding: 1rem; } .cipher-selector button { flex: 1 1 40%; } .cipher-actions { display: grid; grid-template-columns: 1fr; } .cipher-square :is(th, td) { padding: .5rem .2rem; } .aes-studio .studio-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .classical-studio * { transition: none; } }

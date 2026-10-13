@@ -1,0 +1,72 @@
+.security-view { min-width: 0; display: grid; gap: 1.25rem; }
+.security-view > *, .security-grid > * { min-width: 0; }
+.security-view h1 { font-size: clamp(1.6rem, 3vw, 2.5rem); margin: .5rem 0; }
+.security-view h2 { font-size: 1.1rem; margin-bottom: .6rem; }
+.security-view h3 { font-size: 1rem; }
+.security-view p, .security-view li { color: var(--text-secondary); line-height: 1.65; font-size: .9rem; overflow-wrap: anywhere; }
+.security-eyebrow { color: var(--accent); font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; }
+.security-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.security-form, .security-result { display: grid; gap: 1rem; }
+.security-form label, .security-filters label { display: grid; gap: .4rem; color: var(--text-secondary); font-size: .85rem; }
+.security-view :is(input, select, textarea) { min-width: 0; width: 100%; border: 1px solid var(--line-strong); border-radius: .5rem; padding: .7rem; color: var(--foreground); background: var(--background); min-height: 44px; }
+.security-view textarea { min-height: 6rem; resize: vertical; }
+.security-view .security-checkbox { display: flex; gap: .65rem; align-items: center; }
+.security-checkbox input { width: 1.2rem; min-height: 1.2rem; flex: 0 0 1.2rem; accent-color: var(--accent); }
+.security-view button { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--line-strong); border-radius: .5rem; color: var(--foreground); background: var(--surface-2); }
+.security-view button:hover { border-color: var(--accent); }
+.security-view button:disabled { opacity: .45; cursor: default; }
+.security-view :is(button, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.security-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.security-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: end; margin-bottom: 0; }
+.security-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: .8rem; }
+.security-view .security-error { color: var(--danger); }
+.security-view .security-feedback { color: var(--accent); }
+.security-tag { display: inline-block; font-size: .75rem; padding: .25rem .5rem; border-radius: .4rem; background: var(--accent-soft); color: var(--accent); margin: .15rem; white-space: nowrap; }
+.security-tag.blocked, .security-tag.critical { color: var(--danger); background: rgba(255,180,171,.12); }
+.security-tag.high, .security-tag.challenged { color: var(--warning); background: rgba(240,205,137,.12); }
+.security-alert-list { display: grid; gap: .6rem; }
+.security-view .security-alert-row { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 1rem; text-align: left; }
+.security-alert-row > span { min-width: 0; overflow-wrap: anywhere; }
+.security-alert-row small { display: block; color: var(--text-secondary); font-size: .8rem; margin-top: .3rem; }
+.security-alert-row[aria-pressed="true"] { border-color: var(--accent); }
+.security-empty { padding: 1rem 0; }
+.security-score { font-size: 4rem; color: var(--accent); }
+.security-score small { font-size: 1rem; color: var(--text-secondary); }
+.security-result meter { width: 100%; height: 1rem; accent-color: var(--accent); }
+.security-result ul { padding-left: 1.3rem; }
+.security-view .dashboard-table-scroll table { min-width: 42rem; }
+.security-view .dashboard-table-scroll td { max-width: 25rem; overflow-wrap: anywhere; padding-right: 1rem; }
+.security-lab-notice { color: var(--text-secondary); font-size: .8rem; line-height: 1.5; }
+.security-json { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 22rem; overflow: auto; font-size: .85rem; }
+.security-view dl div { margin-bottom: .5rem; overflow-wrap: anywhere; }
+.security-view dt { color: var(--text-secondary); font-size: .8rem; }
+.dashboard-sidebar { overflow-y: auto; }
+@media (max-width: 900px) { .security-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .dashboard-stat-grid { grid-template-columns: minmax(0, 1fr); } .dashboard-stat-card { overflow-wrap: anywhere; } .security-filters { grid-template-columns: minmax(0, 1fr); } .security-alert-row { flex-direction: column; align-items: flex-start !important; } .security-actions button { flex: 1 1 100%; } }
+
+.security-view :is(h1, h2, h3, button, dd) { overflow-wrap: anywhere; }
+.security-view dd { margin-inline-start: 0; }
+.security-view .security-tag { white-space: normal; }
+
+/* Shared record panels keep headings, filters, results and actions visibly separated. */
+.security-view .dashboard-panel { display: grid; gap: 1.25rem; align-content: start; }
+.security-view .dashboard-panel > * { min-width: 0; }
+.security-filters label { min-width: 0; }
+.security-log-filters-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.security-date-range { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.security-record-count { margin: 0; }
+.security-view .dashboard-table-scroll { border: 1px solid var(--line); border-radius: .6rem; }
+.security-view .dashboard-table-scroll > p { padding: 1.25rem; margin: 0; }
+.security-pagination { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.security-pagination button:first-child { justify-self: start; }
+.security-pagination button:last-child { justify-self: end; }
+.security-pagination span { text-align: center; color: var(--text-secondary); font-size: .85rem; }
+@media (max-width: 900px) and (min-width: 641px) {
+  .security-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .security-log-filters:not(.security-log-filters-two) > label:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .security-log-filters-two, .security-date-range { grid-template-columns: minmax(0, 1fr); }
+  .security-pagination { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  .security-pagination button:first-child, .security-pagination button:last-child { justify-self: stretch; }
+}

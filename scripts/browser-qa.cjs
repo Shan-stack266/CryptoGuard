@@ -10,6 +10,7 @@ async function main() {
   page.on('console',message=>{if(message.type()==='error'&&!/Failed to load resource.*401/.test(message.text()))errors.push(message.text())})
   const profile={id:'11111111-1111-4111-8111-111111111111',email:'ui-test@example.test',role:'admin',active:true}
   const state={policies:{maxFailures:5,maxRequests:120,maxPayload:1024,alertThreshold:50,blockThreshold:75,autoBlock:true,emergency:false},events:[],alerts:[],audit:[],blockedIPs:[],ledger:[],accounts:[profile],accountLogs:[],model:{status:'Collecting baseline',samples:0}}
+  const requestCounts={state:0,summary:0}
   let signedIn=false
   await page.route('**/api/**',async route=>{
    const request=route.request(), path=new URL(request.url()).pathname
@@ -17,8 +18,8 @@ async function main() {
    if(path==='/api/auth/session'){status=signedIn?200:401;body=signedIn?{user:profile}:{error:'Log in to continue.'}}
    else if(path==='/api/auth/login'){signedIn=true;body={user:profile}}
    else if(path==='/api/auth/logout'){signedIn=false;body={ok:true}}
-   else if(path==='/api/state')body=state
-   else if(path==='/api/summary')body={users:1,active:1,failures:0,denied:0,open:0,ack:0,restrictions:0}
+   else if(path==='/api/state'){requestCounts.state++;body=state}
+   else if(path==='/api/summary'){requestCounts.summary++;body={users:1,active:1,failures:0,denied:0,open:0,ack:0,restrictions:0}}
    else if(path==='/api/logs'){const rows=new URL(request.url()).searchParams.get('kind')==='account'?state.accountLogs:state.events;body={rows,total:rows.length,page:1,size:20}}
    else if(path==='/api/profile'){Object.assign(profile,request.postDataJSON());body={user:profile}}
    else if(path==='/api/ciphers'){const entry={...request.postDataJSON(),id:crypto.randomUUID(),timestamp:new Date().toISOString()};state.ledger.unshift(entry);body=entry;status=201}
@@ -39,8 +40,11 @@ async function main() {
   await page.getByLabel('Password',{exact:true}).fill('testingpassword')
   await page.getByRole('button',{name:'Log in',exact:true}).click()
   await page.getByRole('heading',{name:'CRYPTOGUARD Overview'}).waitFor()
+  await page.waitForFunction(()=>document.querySelector('.overview-stats')?.getAttribute('aria-busy')==='false')
   const metrics=await page.locator('.dashboard-stat-card strong').allTextContents()
   assert.equal(metrics.length,4)
+  assert.equal(requestCounts.state,1,'Initial state request should be coalesced')
+  assert.equal(requestCounts.summary,1,'Summary should load once alongside state')
   assert.equal(await page.getByRole('button',{name:/Emergency Lockout Protocol|Release Emergency Lockout/}).count(),0)
   assert.ok(metrics.every(value=>value==='0'))
   await page.getByRole('button',{name:'Account',exact:true}).click()

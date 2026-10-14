@@ -115,9 +115,9 @@ export function createHandler({ store, auth, config }) {
         throw fail(401, 'Log in to continue.')
       }
       const sessionHash=createHash('sha256').update(cookies.cg_session??'').digest('hex')
-      const appSession=(await store.list('cg_sessions',{token_hash:sessionHash,user_id:user.id},1,null))[0]
+      const [appSessions, account] = await Promise.all([store.list('cg_sessions',{token_hash:sessionHash,user_id:user.id},1,null), profile(user)])
+      const appSession=appSessions[0]
       if(!appSession||appSession.revoked_at||Date.parse(appSession.expires_at)<=Date.now()){setCookies(response,null,config.secure);throw fail(401,'Application session expired. Log in again.')}
-      const account = await profile(user)
       if (path === '/api/auth/logout' && request.method === 'POST') {
         try { await store.update('cg_sessions',{token_hash:sessionHash},{revoked_at:new Date().toISOString()});await record(user, ip, 'Logout'); await auth.logout(token) }
         finally { setCookies(response, null, config.secure) }
@@ -133,8 +133,13 @@ export function createHandler({ store, auth, config }) {
         return send(200, { message: 'Password updated. Other application sessions were revoked.' })
       }
       if (account.locked_until && Date.parse(account.locked_until) > Date.now()) throw fail(423, 'Account temporarily locked. Contact an administrator.')
-      const policy = await policies()
-      if (account.role !== 'admin' && (policy.emergency || (await store.list('cg_blocked_ips', { ip }, 1, null)).length)) {
+      const isSession = path === '/api/auth/session' && request.method === 'GET'
+      const [policy, blockedIPsForRequest, baseline] = await Promise.all([
+        policies(),
+        account.role !== 'admin' ? store.list('cg_blocked_ips', { ip }, 1, null) : [],
+        isSession ? [] : store.list('cg_events', { user_id: user.id }, 200),
+      ])
+      if (account.role !== 'admin' && (policy.emergency || blockedIPsForRequest.length)) {
         await record(user, ip, 'Access denied', { score: 100, severity: 'Critical', decision: 'Blocked', controls: ['Active access restriction'] })
         throw fail(403, 'Access restricted by security policy.')
       }
@@ -155,7 +160,6 @@ export function createHandler({ store, auth, config }) {
       }
       // Measure authenticated activity on the server. Reject anomalous requests
       // before performing their operation when automatic prevention is enabled.
-      const baseline = await store.list('cg_events', { user_id: user.id }, 200)
       const requests = baseline.filter((event) => Date.parse(event.timestamp) > Date.now() - 60000&&/^(GET|POST|PUT|PATCH|DELETE) /.test(event.operation)).length + 1
       const deviceHash = createHash('sha256').update(String(request.headers['user-agent'] ?? '')).digest('hex')
       const measured = { identity: user.id, ip: ip.includes(':') ? '127.0.0.1' : ip, failures: 0, requests, payload: Buffer.byteLength(text) / 1024, unknownDevice: baseline.some((event) => event.device_hash) && !baseline.some((event) => event.device_hash === deviceHash) }

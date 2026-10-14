@@ -28,7 +28,7 @@ function fixture(role = 'user') {
     const res={ setHeader(name,value) { headers[name]=value }, end(value) { payload=JSON.parse(value) },statusCode:200 }
     await handler(req,res); return { status:res.statusCode,body:payload,headers }
   }
-  return { request,tables }
+  return { request,tables,store }
 }
 test('API requires verified identity and denies forged origin', async () => {
   const app=fixture()
@@ -107,4 +107,28 @@ test('Vercel parsed request bodies retain validation, login and payload limits',
   assert.ok(result.headers['Set-Cookie'].every(value=>value.includes('Secure')))
   assert.equal((await app.request('/api/auth/login',{}, {parsedBody:'x'.repeat(65537)})).status,413)
   assert.equal((await app.request('/api/auth/login',{}, {parsedBody:'invalid json'})).status,400)
+})
+
+
+test('Independent session and security reads start together without skipping access checks', async () => {
+  const app=fixture(), original=app.store.list
+  const seen=new Set()
+  let releaseSession,releaseChecks
+  const sessionGate=new Promise(resolve=>{releaseSession=resolve})
+  const checksGate=new Promise(resolve=>{releaseChecks=resolve})
+  app.store.list=async (table,...args) => {
+    seen.add(table)
+    if(['cg_profiles','cg_sessions'].includes(table)) await sessionGate
+    if(['cg_policies','cg_blocked_ips','cg_events'].includes(table)) await checksGate
+    return original(table,...args)
+  }
+  const pending=app.request('/api/state')
+  await new Promise(setImmediate)
+  assert.ok(seen.has('cg_sessions')&&seen.has('cg_profiles'))
+  releaseSession()
+  await new Promise(setImmediate)
+  assert.ok(seen.has('cg_policies')&&seen.has('cg_blocked_ips')&&seen.has('cg_events'))
+  releaseChecks()
+  assert.equal((await pending).status,200)
+  assert.ok(app.tables.cg_events.some(row=>row.operation==='GET /api/state'))
 })

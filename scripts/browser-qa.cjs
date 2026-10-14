@@ -103,7 +103,7 @@ async function main() {
     if([1440,390].includes(width)&&['Dashboard Overview','Cryptography','Prevention','AI Detection Results','Reports','Alerts'].includes(view))await page.screenshot({path:path.join(shots,`${view.replaceAll(' ','-')}-${width}.png`),fullPage:true})
    }
   }
-  await page.getByRole('button',{name:'Logout to landing'}).click()
+  await page.getByRole('button',{name:'Sign out'}).click()
   await page.getByRole('button',{name:'Open profile login'}).waitFor()
   for(const width of [1920,1440,1320,1180,1024,980,768,640,390,320]){await page.setViewportSize({width,height:900});await layout('Landing',width)}
   await page.setViewportSize({width:1440,height:900});await page.screenshot({path:path.join(shots,'landing-1440.png'),fullPage:true})

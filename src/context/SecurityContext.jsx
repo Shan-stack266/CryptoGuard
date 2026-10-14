@@ -71,7 +71,16 @@ export function SecurityProvider({ children }) {
     setEmergency: (emergency) => mutate('/policies', { ...state.policies, emergency }, 'PUT'),
     recordAudit: (operation, detail) => mutate('/audit', { operation, detail }),
     updateAccount: (id, role, active, unlock = false) => mutate('/accounts', { id, role, active, unlock }, 'PATCH'),
-    addCipher: (entry) => mutate('/ciphers', entry),
+    addCipher: async (entry) => {
+      const owner = user?.id
+      const saved = await api('/ciphers', entry)
+      if (currentUser.current === owner) {
+        setState(previous => ({ ...previous, ledger: [saved, ...previous.ledger.filter(row => row.id !== saved.id)].slice(0, 200) }))
+        // The insert succeeded; a slow refresh must not turn it into a failed save.
+        reload({ force: true }).catch(() => {})
+      }
+      return saved
+    },
   }}>{children}</SecurityContext.Provider>
 }
 export const useSecurity = () => useContext(SecurityContext)

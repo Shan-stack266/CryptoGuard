@@ -162,7 +162,7 @@ export function createHandler({ store, auth, config }) {
       // before performing their operation when automatic prevention is enabled.
       const requests = baseline.filter((event) => Date.parse(event.timestamp) > Date.now() - 60000&&/^(GET|POST|PUT|PATCH|DELETE) /.test(event.operation)).length + 1
       const deviceHash = createHash('sha256').update(String(request.headers['user-agent'] ?? '')).digest('hex')
-      const measured = { identity: user.id, ip: ip.includes(':') ? '127.0.0.1' : ip, failures: 0, requests, payload: Buffer.byteLength(text) / 1024, unknownDevice: baseline.some((event) => event.device_hash) && !baseline.some((event) => event.device_hash === deviceHash) }
+      const measured = { operation: `${request.method} ${path}`, identity: user.id, ip: ip.includes(':') ? '127.0.0.1' : ip, failures: 0, requests, payload: Buffer.byteLength(text) / 1024, unknownDevice: baseline.some((event) => event.device_hash) && !baseline.some((event) => event.device_hash === deviceHash) }
       const risk = analyzeActivity({ ...measured, payload: Math.ceil(measured.payload) }, { ...policy, emergency: admin ? false : policy.emergency }, [])
       const model = detectAnomaly(measured, baseline)
       if (model.anomalous) { risk.score = Math.max(risk.score, 75); risk.severity = 'Critical'; risk.reasons.push({ text: 'kNN model detected activity outside the learned baseline', points: 75 }); risk.decision = policy.autoBlock ? 'Blocked' : 'Challenged' }

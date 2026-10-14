@@ -79,6 +79,7 @@ export default function ClassicalWorkbench() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [feedback, setFeedback] = useState('')
+  const [saving, setSaving] = useState(false)
   const [selectedStep, setSelectedStep] = useState(0)
   const settings = drafts[cipher]
   const squareCipher = cipher === 'playfair' || cipher === 'bifid'
@@ -88,18 +89,23 @@ export default function ClassicalWorkbench() {
     setDrafts((current) => ({ ...current, [cipher]: { ...current[cipher], [field]: value } }))
     resetResult()
   }
-  function process(decrypt) {
+  async function process(decrypt) {
+    if (saving) return
     resetResult()
+    setSaving(true)
     try {
       const next = { ...runCipher(cipher, settings.message, settings, decrypt), decrypt }
       setResult(next)
       // Keep the existing digest-only ledger; never store plaintext or keywords.
-      sha256Digest(next.output).then((digest) => addLedgerEntry({
-        id: `CLASSIC-${crypto.randomUUID()}`, operation: decrypt ? 'Decrypt' : 'Encrypt',
-        algorithm: ciphers[cipher].name, digest, status: 'Processed',
-      })).catch((failure) => setFeedback(`Result ready, but history was not saved: ${failure.message}`))
+      setFeedback('Result ready. Saving cipher history...')
+      try {
+        await addLedgerEntry({ operation: decrypt ? 'Decrypt' : 'Encrypt', algorithm: ciphers[cipher].name, digest: await sha256Digest(next.output) })
+        setFeedback('Result ready. Cipher history saved.')
+      } catch (failure) { setFeedback(`Result ready, but history was not saved: ${failure.message}`) }
     } catch (failure) { setError(failure.message) }
+    finally { setSaving(false) }
   }
+
   async function copy() {
     try { await navigator.clipboard.writeText(result.output); setFeedback('Result copied.') }
     catch { setFeedback('Clipboard unavailable. Select and copy the result field manually.') }
@@ -116,7 +122,7 @@ export default function ClassicalWorkbench() {
         {cipher === 'caesar' ? <label>Shift (0–25)<input type="number" min="0" max="25" step="1" value={settings.shift} onChange={(e) => update('shift', e.target.value)} /></label> : <label>Keyword (A–Z; spaces allowed)<input value={settings.keyword} onChange={(e) => update('keyword', e.target.value)} spellCheck={false} /></label>}
         {cipher === 'bifid' && <label>Period (default 5; range 1–10,000)<input type="number" min="1" max="10000" step="1" value={settings.period} onChange={(e) => update('period', e.target.value)} /></label>}
         {squareCipher && <p className="cipher-note" id="cipher-conventions">Messages become uppercase A–Z only; J becomes I. Spaces, numbers, punctuation, and non-ASCII characters are removed. {cipher === 'playfair' && 'Repeated pairs and final single letters receive X filler (Q for X). Decryption retains fillers because their removal is ambiguous; original formatting and J cannot be recovered.'}</p>}
-        <div className="cipher-actions"><button type="button" className="primary-action" onClick={() => process(false)}>Encrypt</button><button type="button" className="secondary-action" onClick={() => process(true)}>Decrypt</button><button type="button" className="secondary-action" onClick={() => update('message', '')}>Clear</button></div>
+        <div className="cipher-actions"><button type="button" className="primary-action" disabled={saving} onClick={() => process(false)}>Encrypt</button><button type="button" className="secondary-action" disabled={saving} onClick={() => process(true)}>Decrypt</button><button type="button" className="secondary-action" onClick={() => update('message', '')}>Clear</button></div>
         {error && <p role="alert" className="cipher-error">{error}</p>}
         <label htmlFor="classic-result">{result ? (result.decrypt ? 'Decrypted result' : 'Encrypted result') : 'Result'}</label>
         <textarea id="classic-result" value={result?.output ?? ''} readOnly placeholder="Your result appears here" aria-live="polite" />

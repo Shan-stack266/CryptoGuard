@@ -132,3 +132,16 @@ test('Independent session and security reads start together without skipping acc
   assert.equal((await pending).status,200)
   assert.ok(app.tables.cg_events.some(row=>row.operation==='GET /api/state'))
 })
+
+
+test('A normal cipher save persists after a read-only baseline; learned cipher outliers remain blocked',async()=>{
+ const app=fixture()
+ app.tables.cg_events=Array.from({length:30},(_,i)=>({id:`poll-${i}`,user_id:userID,source:'Application',decision:'Allowed',operation:'GET /api/state',timestamp:new Date(Date.now()-120000-i*1000).toISOString(),requests:2,payload:0}))
+ const saved=await app.request('/api/ciphers',{algorithm:'Caesar',operation:'Encrypt',digest:'a'.repeat(64)})
+ assert.equal(saved.status,201);assert.equal(app.tables.cg_cipher_history.length,1)
+ assert.equal((await app.request('/api/state')).body.ledger[0].id,saved.body.id)
+ app.tables.cg_events=Array.from({length:30},(_,i)=>({id:`cipher-${i}`,user_id:userID,source:'Application',decision:'Allowed',operation:'POST /api/ciphers',timestamp:new Date(Date.now()-120000-i*1000).toISOString(),requests:2,payload:0.2}))
+ const denied=await app.request('/api/ciphers',{algorithm:'Caesar',operation:'Encrypt',digest:'b'.repeat(64),extra:'x'.repeat(10000)})
+ assert.equal(denied.status,403);assert.equal(app.tables.cg_cipher_history.length,1)
+ assert.ok(app.tables.cg_alerts.length>0)
+})

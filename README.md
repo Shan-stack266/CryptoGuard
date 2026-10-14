@@ -98,3 +98,6 @@ Do not use VITE_ prefixes for these secrets. Redeploy after saving environment c
 Check https://cryptoguard-two.vercel.app/api/health: it must return JSON with configured:true. An unauthenticated /api/auth/session should return JSON with HTTP 401. A 404 means the API function/routing has not been deployed; HTTP 503 means environment configuration is missing or invalid. Health confirms configuration presence, not a successful database transaction.
 
 The database-backed failed-login lock and revocable sessions persist across function instances. The in-memory request burst counters apply per running function instance; a deployment-wide rate limit requires shared storage or a platform rule.
+
+
+Cipher monitoring compares comparable activity types: history writes against earlier history writes, and workspace reads against earlier workspace reads. Each user/activity group needs at least 20 allowed observations before its model is ready. This prevents a routine metadata save from being judged against body-free polling. Policy limits and account access checks still apply while a baseline is collected. Successful history inserts update the ledger immediately; a later refresh error is separate from insert success. Previously blocked save attempts have no history row and must be performed again to record them.

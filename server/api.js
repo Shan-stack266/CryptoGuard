@@ -154,9 +154,13 @@ export function createHandler({ store, auth, config }) {
       limited(`user:${user.id}`, 240)
       const admin = account.role === 'admin'
       const adminRoutes = ['/api/policies','/api/blocks','/api/alerts','/api/accounts']
-      if (!admin && (adminRoutes.some((route) => path.startsWith(route)) || path === '/api/security/analyze' || (path==='/api/logs'&&['account','security','model','alerts'].includes(url.searchParams.get('kind'))))) {
+      if (!admin && (adminRoutes.some((route) => path.startsWith(route)) || path === '/api/security/analyze' || (path==='/api/logs'&&['account','security','model'].includes(url.searchParams.get('kind'))))) {
         await record(user, ip, 'Access denied', { score: 80, severity: 'Critical', decision: 'Blocked', controls: ['Administrator role required'] })
         throw fail(403, 'Administrator role required.')
+      }
+      if (admin && path === '/api/ciphers') {
+        await record(user, ip, 'Access denied', { score: 80, severity: 'High', decision: 'Blocked', controls: ['Cryptography is reserved for regular user accounts'], http_status: 403 })
+        throw fail(403, 'Cryptography is available to regular users. Administrators monitor security only.')
       }
       // Measure authenticated activity on the server. Reject anomalous requests
       // before performing their operation when automatic prevention is enabled.

@@ -4,7 +4,7 @@ import DecryptionWorkbench from '../components/crypto/DecryptionWorkbench.jsx'
 import EncryptionWorkbench from '../components/crypto/EncryptionWorkbench.jsx'
 import ClassicalWorkbench from '../components/crypto/ClassicalWorkbench.jsx'
 
-export default function CryptoStudio() {
+export default function CryptoStudio({ cipher, includeHistory = true }) {
   const [ciphertext, setCiphertext] = useState('')
   const [passphrase, setPassphrase] = useState('')
 
@@ -16,7 +16,7 @@ export default function CryptoStudio() {
           <h1>Encryption & decryption</h1>
         </div>
       </div>
-      <ClassicalWorkbench />
+      <ClassicalWorkbench externalCipher={cipher} hideSelector={Boolean(cipher)} />
       <details className="glass-panel aes-studio">
       <summary>AES-256-GCM · authenticated payload sealing</summary>
       <div className="studio-grid">
@@ -29,7 +29,7 @@ export default function CryptoStudio() {
         <DecryptionWorkbench ciphertext={ciphertext} passphrase={passphrase} />
       </div>
       </details>
-      <CryptoAuditLedger />
+      {includeHistory && <CryptoAuditLedger />}
     </section>
   )
 }

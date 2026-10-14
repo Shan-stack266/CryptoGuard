@@ -145,3 +145,20 @@ test('A normal cipher save persists after a read-only baseline; learned cipher o
  assert.equal(denied.status,403);assert.equal(app.tables.cg_cipher_history.length,1)
  assert.ok(app.tables.cg_alerts.length>0)
 })
+
+
+test('Administrators monitor cipher history but cannot create cipher records',async()=>{
+ const app=fixture('admin')
+ const result=await app.request('/api/ciphers',{algorithm:'Caesar',operation:'Encrypt',digest:'a'.repeat(64)})
+ assert.equal(result.status,403);assert.equal(app.tables.cg_cipher_history.length,0)
+ assert.ok(app.tables.cg_events.some(row=>row.operation==='Access denied'))
+ assert.equal((await app.request('/api/logs?kind=cipher')).status,200)
+})
+
+test('User alert monitoring is owner-bound and cannot modify alerts',async()=>{
+ const app=fixture()
+ app.tables.cg_alerts.push({id:'mine',user_id:userID},{id:'other',user_id:'another-user'})
+ const result=await app.request('/api/logs?kind=alerts')
+ assert.equal(result.status,200);assert.equal(result.body.rows.length,1);assert.equal(result.body.rows[0].id,'mine')
+ assert.equal((await app.request('/api/alerts',{id:'mine',status:'Resolved'},{method:'PATCH'})).status,403)
+})

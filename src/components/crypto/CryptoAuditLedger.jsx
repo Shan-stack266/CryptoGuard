@@ -1,7 +1,7 @@
 import { useTelemetry } from '../../context/TelemetryContext.jsx'
 
 export default function CryptoAuditLedger() {
-  const { ledger } = useTelemetry()
+  const { ledger, loaded, historyError } = useTelemetry()
   const rows = ledger
 
   return (
@@ -33,7 +33,7 @@ export default function CryptoAuditLedger() {
                 <td><span className="pill allowed">{row.status}</span></td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={5}>No cipher operations recorded yet.</td></tr>}
+            {!rows.length && <tr><td colSpan={5}>{historyError ? 'History could not be refreshed.' : !loaded ? 'Loading cipher history...' : 'No cipher operations recorded yet.'}</td></tr>}
           </tbody>
         </table>
       </div>

@@ -101,3 +101,12 @@ The database-backed failed-login lock and revocable sessions persist across func
 
 
 Cipher monitoring compares comparable activity types: history writes against earlier history writes, and workspace reads against earlier workspace reads. Each user/activity group needs at least 20 allowed observations before its model is ready. This prevents a routine metadata save from being judged against body-free polling. Policy limits and account access checks still apply while a baseline is collected. Successful history inserts update the ledger immediately; a later refresh error is separate from insert success. Previously blocked save attempts have no history row and must be performed again to record them.
+
+
+## Workspace roles
+
+Administrators use the security dashboard for monitoring, investigations, account access controls, and reports. Cryptography controls are absent from the administrator workspace, and the API rejects administrator cipher-history writes. Existing cipher-history records remain available to administrators for monitoring and reports.
+
+Regular users have one page with Playfair, Caesar, Bifid, and Vigenere navigation across the top. Inputs are retained per cipher while switching tabs. The same page includes their cipher history, paginated personal activity and security-alert records, reports, and expandable account settings. Their alert access is read-only; only administrators can acknowledge or resolve alerts and enforce restrictions. All user log queries are owner-bound on the server. AES remains available as an expandable advanced workbench.
+
+No database migration is required for this role/workspace update. To use cryptography, sign in with a regular user account; newly registered accounts have the user role by default.

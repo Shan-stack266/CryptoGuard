@@ -24,7 +24,7 @@ async function main(){
    await route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)})
   })
   await page.goto(process.env.QA_URL || 'http://localhost:5173')
-  await page.locator('.dashboard-nav').getByRole('button',{name:'Cryptography',exact:true}).click()
+  await page.getByRole('heading',{name:'Encryption & decryption',exact:true}).waitFor()
   await page.getByRole('group',{name:'Select cipher'}).getByRole('button',{name:'Caesar',exact:true}).click()
   await page.locator('#classic-message').fill('Hello')
   await page.locator('input[type=number]').fill('3')

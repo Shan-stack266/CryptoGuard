@@ -72,13 +72,19 @@ function Visualization({ cipher, settings, result, selectedStep, onSelectStep })
   </>
 }
 
-export default function ClassicalWorkbench() {
+export default function ClassicalWorkbench({ externalCipher, hideSelector = false }) {
   const { addLedgerEntry } = useTelemetry()
-  const [cipher, setCipher] = useState('playfair')
+  const [localCipher, setCipher] = useState('playfair')
+  const cipher = externalCipher ?? localCipher
   const [drafts, setDrafts] = useState(() => Object.fromEntries(Object.entries(ciphers).map(([id, config]) => [id, { ...config, message: '', keyword: '', shift: '0' }])))
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState('')
-  const [feedback, setFeedback] = useState('')
+  const [storedResult, setResult] = useState(null)
+  const result = storedResult?.cipher === cipher ? storedResult : null
+  const [errorState, setErrorState] = useState(null)
+  const error = errorState?.cipher === cipher ? errorState.text : ''
+  const setError = text => setErrorState({ cipher, text })
+  const [feedbackState, setFeedbackState] = useState(null)
+  const feedback = feedbackState?.cipher === cipher ? feedbackState.text : ''
+  const setFeedback = text => setFeedbackState({ cipher, text })
   const [saving, setSaving] = useState(false)
   const [selectedStep, setSelectedStep] = useState(0)
   const settings = drafts[cipher]
@@ -94,7 +100,7 @@ export default function ClassicalWorkbench() {
     resetResult()
     setSaving(true)
     try {
-      const next = { ...runCipher(cipher, settings.message, settings, decrypt), decrypt }
+      const next = { ...runCipher(cipher, settings.message, settings, decrypt), decrypt, cipher }
       setResult(next)
       // Keep the existing digest-only ledger; never store plaintext or keywords.
       setFeedback('Result ready. Saving cipher history...')
@@ -112,7 +118,7 @@ export default function ClassicalWorkbench() {
   }
 
   return <section className="classical-studio" aria-label="Classical cipher workbench">
-    <div className="cipher-selector" role="group" aria-label="Select cipher">{Object.entries(ciphers).map(([id, config]) => <button type="button" aria-pressed={id === cipher} key={id} onClick={() => { setCipher(id); resetResult() }}>{config.name}</button>)}</div>
+    {!hideSelector && <div className="cipher-selector" role="group" aria-label="Select cipher">{Object.entries(ciphers).map(([id, config]) => <button type="button" aria-pressed={id === cipher} key={id} onClick={() => { setCipher(id); resetResult() }}>{config.name}</button>)}</div>}
     <div className="cipher-layout">
       <section className="glass-panel workbench cipher-controls">
         <div className="panel-heading"><div><span>Classical cipher</span><h2>{ciphers[cipher].name}</h2></div><span className="tag">Educational</span></div>

@@ -8,6 +8,12 @@ test('Log query uses UTC date boundaries, validated pagination and forced owners
  assert.equal(spec.filters.operation,'Login');assert.equal(spec.filters.decision,'Failed')
 })
 test('Log query rejects unauthorized categories, invalid page sizes and reversed dates',()=>{
- for(const kind of ['account','security','model','alerts'])assert.throws(()=>logQuery(new URLSearchParams({kind}),user,false),/Administrator/)
+ for(const kind of ['account','security','model'])assert.throws(()=>logQuery(new URLSearchParams({kind}),user,false),/Administrator/)
  for(const params of [{kind:'bad'},{page:'0'},{size:'101'},{start:'bad'},{start:'2026-10-14',end:'2026-10-13'}])assert.throws(()=>logQuery(new URLSearchParams(params),user,true))
+})
+
+
+test('Regular users can read only their own alerts',()=>{
+ const spec=logQuery(new URLSearchParams({kind:'alerts',status:'Open'}),user,false)
+ assert.equal(spec.table,'cg_alerts');assert.equal(spec.filters.user_id,user.id);assert.equal(spec.filters.status,'Open')
 })

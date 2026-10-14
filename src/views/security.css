@@ -70,3 +70,7 @@
   .security-pagination { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
   .security-pagination button:first-child, .security-pagination button:last-child { justify-self: stretch; }
 }
+
+.security-analysis-grid:not(.has-analysis) { grid-template-columns: minmax(0, 1fr); }
+.security-analysis-grid:not(.has-analysis) > form button { justify-self: start; }
+.security-analysis-grid p { max-width: 75ch; }

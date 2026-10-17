@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
   const value = {
     user, loading, error, recovery,
     async login(email, password) { const result = await api('/auth/login', { email, password }); setUser(result.user); setError(''); return result.user },
-    signup: (email, password) => api('/auth/signup', { email, password }),
+    signup: (details) => api('/auth/signup', details),
     recover: (email) => api('/auth/recover', { email }),
     async updateProfile(display_name){const result=await api('/profile',{display_name},'PATCH');setUser(result.user);return result},
     async password(password) { const result = await api('/auth/password', { password }); setRecovery(false); const session = await api('/auth/session'); setUser(session.user); return result },

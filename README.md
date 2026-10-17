@@ -110,3 +110,14 @@ Administrators use the security dashboard for monitoring, investigations, accoun
 Regular users have one page with Playfair, Caesar, Bifid, and Vigenere navigation across the top. Inputs are retained per cipher while switching tabs. The same page includes their cipher history, paginated personal activity and security-alert records, reports, and expandable account settings. Their alert access is read-only; only administrators can acknowledge or resolve alerts and enforce restrictions. All user log queries are owner-bound on the server. AES remains available as an expandable advanced workbench.
 
 No database migration is required for this role/workspace update. To use cryptography, sign in with a regular user account; newly registered accounts have the user role by default.
+
+
+## Five-field registration migration
+
+Before deploying the updated registration code, run `database/signup-profile-migration.sql` in Supabase SQL Editor after the base and master migrations. It adds `cg_profiles.full_name` and `cg_profiles.username`, enforces unique lowercase usernames, and replaces the account-creation trigger to copy validated signup metadata into the profile. It preserves all existing accounts, passwords, roles, sessions, and history. Run this signup migration last if you rerun an older schema file that replaces the same Auth trigger.
+
+New signups require full name (2-100 characters), username (3-30 letters, numbers, or underscores; case-insensitive), email, password (8-256 characters), and matching confirmation. Password confirmation is validated but never stored in profiles or metadata. Only full_name and username are sent as signup metadata; roles remain the server default user. Login continues to use email and password. The existing auto-confirm Auth setting is unchanged. Existing accounts retain blank full_name and NULL username rather than invented values and can still sign in normally.
+
+The new trigger requires valid identity metadata on new Auth inserts, so create future users through the new registration form or supply those two fields when creating users through the Auth admin API. Browser table permissions remain disabled. Username uniqueness is enforced in PostgreSQL as well as checked by the API, so concurrent signups cannot claim the same username.
+
+Validation: `npm.cmd test`, `node scripts/validate-sql.cjs`, `node scripts/signup-qa.cjs`, and `npm.cmd run build`. The SQL script is verified in isolated PostgreSQL; no test/demo accounts are inserted in the live project.

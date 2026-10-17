@@ -4,7 +4,7 @@ const fs = require('node:fs'), assert = require('node:assert/strict')
 async function main() {
   const db = new PGlite()
   try {
-    await db.exec("create schema auth; create role anon; create role authenticated; create role service_role; create table auth.users(id uuid primary key,email text,encrypted_password text,email_confirmed_at timestamptz,confirmation_token text,updated_at timestamptz default now(),created_at timestamptz default now()); create function auth.uid() returns uuid language sql as $$ select null::uuid $$;")
+    await db.exec("create schema auth; create role anon; create role authenticated; create role service_role; create table auth.users(id uuid primary key,email text,encrypted_password text,raw_user_meta_data jsonb default '{}'::jsonb,email_confirmed_at timestamptz,confirmation_token text,updated_at timestamptz default now(),created_at timestamptz default now()); create function auth.uid() returns uuid language sql as $$ select null::uuid $$;")
     await db.exec(fs.readFileSync('database/supabase-schema.sql','utf8'))
     await db.exec(fs.readFileSync('database/supabase-schema.sql','utf8'))
     await db.exec(fs.readFileSync('database/ias-master-migration.sql','utf8'))
@@ -37,7 +37,22 @@ async function main() {
     assert.equal((await db.query('select count(*)::int as total from auth.users where email_confirmed_at is null')).rows[0].total,0)
     assert.equal((await db.query("select role from public.cg_profiles where email='ordinary-test@example.test'")).rows[0].role,'user')
     await db.exec(confirmSQL)
-    console.log('SQL validation passed: schema/triggers/locks/permissions; personal admin grant confirms, activates and unlocks only the chosen account without changing its password; missing-account guard; bulk confirmation reruns without promoting ordinary users.')
+    const signupSQL=fs.readFileSync('database/signup-profile-migration.sql','utf8')
+    await db.exec(signupSQL);await db.exec(signupSQL)
+    assert.equal((await db.query('select count(*)::int as total from public.cg_profiles where username is null and full_name=\'\'')).rows[0].total,3)
+    const newID='44444444-4444-4444-8444-444444444444'
+    await db.query('insert into auth.users(id,email,encrypted_password,raw_user_meta_data) values($1,$2,$3,$4::jsonb)',[newID,'new-user@example.test','managed-only',JSON.stringify({full_name:"  Jo O'Connor  ",username:'New_User',role:'admin',active:false})])
+    const created=(await db.query('select * from public.cg_profiles where id=$1',[newID])).rows[0]
+    assert.equal(created.full_name,"Jo O'Connor");assert.equal(created.display_name,"Jo O'Connor");assert.equal(created.username,'new_user');assert.equal(created.role,'user');assert.equal(created.active,true)
+    const rejectedID='55555555-5555-4555-8555-555555555555'
+    await assert.rejects(()=>db.query('insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3::jsonb)',[rejectedID,'duplicate@example.test',JSON.stringify({full_name:'Duplicate User',username:'NEW_USER'})]),/unique constraint/)
+    assert.equal((await db.query('select count(*)::int as total from auth.users where id=$1',[rejectedID])).rows[0].total,0)
+    for(const metadata of [{},{full_name:'A',username:'valid_user'},{full_name:'Valid User',username:'bad space'},{full_name:42,username:'valid_user'}])await assert.rejects(()=>db.query('insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3::jsonb)',[rejectedID,'invalid@example.test',JSON.stringify(metadata)]),/required|Full name|Username/)
+    await db.exec("update auth.users set encrypted_password='still-managed' where email='ordinary-test@example.test';")
+    await db.exec('set role authenticated;')
+    await assert.rejects(()=>db.query('select username,full_name from public.cg_profiles'),/permission denied/)
+    await db.exec('reset role;')
+    console.log('SQL validation passed: existing accounts preserved; signup fields stored; usernames normalized and unique; duplicate/invalid Auth inserts rolled back; metadata cannot promote roles; passwords remain Auth-managed; RLS restrictions retained.')
   } finally { await db.close() }
 }
 main().catch((error) => { console.error(error.message); process.exitCode=1 })

@@ -2567,3 +2567,15 @@ select {
 .user-record-panel, .user-monitoring .glass-panel { min-width: 0; max-width: 100%; }
 
 .dashboard-topbar .dashboard-signout { min-height: 44px; white-space: nowrap; border: 1px solid var(--line-strong); }
+
+.premium-login-form label small { font-size: .75rem; line-height: 1.5; color: var(--text-secondary); letter-spacing: normal; text-transform: none; }
+
+.signup-modal { width: min(38rem, calc(100vw - 2rem)); }
+.signup-modal .login-brand-mark { width: 2.75rem; height: 2.75rem; margin-bottom: .75rem; }
+.signup-modal h2 { font-size: clamp(2.4rem, 5vw, 3.2rem); margin-top: .75rem; }
+.signup-modal > p { font-size: .9rem; margin-top: .75rem; }
+.signup-modal .premium-login-form { margin-top: 1.25rem; gap: .8rem; }
+.signup-identities { display: grid; align-items: start; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.signup-identities > label { min-width: 0; }
+.signup-identities input { min-width: 0; width: 100%; }
+@media (max-width: 640px) { .signup-identities { grid-template-columns: minmax(0, 1fr); } }

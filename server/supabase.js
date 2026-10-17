@@ -51,7 +51,11 @@ export function createServices(config) {
     async login(email, password) { const result = await newAuth().auth.signInWithPassword({ email, password }); return result.error ? null : result.data },
     async verify(token) { const result = await newAuth().auth.getUser(token); return result.error ? null : result.data.user },
     async refresh(refresh_token) { const result = await newAuth().auth.refreshSession({ refresh_token }); return result.error ? null : result.data.session },
-    async signup(email, password) { const result = await newAuth().auth.signUp({ email, password, options: { emailRedirectTo: config.origin } }); if (result.error) throw new Error('Registration failed. Check the email, password, and Auth settings.'); return result.data },
+    async signup(email, password, details) {
+      const result = await newAuth().auth.signUp({ email, password, options: { emailRedirectTo: config.origin, data: { full_name: details.full_name, username: details.username } } })
+      if (result.error) throw Object.assign(new Error('Registration failed. Check whether the email or username is already used and try again.'), { status: result.error.status === 429 ? 429 : 400 })
+      return result.data
+    },
     async recover(email) { const result = await newAuth().auth.resetPasswordForEmail(email, { redirectTo: config.origin }); if (result.error) throw new Error('Recovery email could not be requested. Try again later.') },
     async password(token, password) {
       const response = await fetch(`${config.url}/auth/v1/user`, { method: 'PUT', headers: { apikey: config.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) })

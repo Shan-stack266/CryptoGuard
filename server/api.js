@@ -68,7 +68,23 @@ export function createHandler({ store, auth, config }) {
         if (request.method !== 'POST') throw fail(405, 'Method not allowed.')
         limited(`auth:${ip}`, 15)
         if (path.endsWith('/signup')) {
-          const signup = await auth.signup(emailValue(body.email), passwordValue(body.password))
+          const email = emailValue(body.email), password = passwordValue(body.password)
+          const full_name = typeof body.full_name === 'string' ? body.full_name.trim() : ''
+          const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : ''
+          if (full_name.length < 2 || full_name.length > 100 || /[\u0000-\u001f\u007f]/.test(full_name)) throw fail(400, 'Enter a full name of 2-100 characters.')
+          if (!/^[a-z0-9_]{3,30}$/.test(username)) throw fail(400, 'Username must contain 3-30 letters, numbers, or underscores.')
+          if (body.confirm_password !== password) throw fail(400, 'Passwords do not match.')
+          let existing
+          try { existing = await store.list('cg_profiles', { username }, 1, null) }
+          catch { throw fail(503, 'Registration setup is incomplete. Apply database/signup-profile-migration.sql.') }
+          if (existing.length) throw fail(409, 'Username is not available. Choose another one.')
+          let signup
+          try { signup = await auth.signup(email, password, { full_name, username }) }
+          catch (failure) {
+            const conflict = await store.list('cg_profiles', { username }, 1, null).catch(() => [])
+            if (conflict.length) throw fail(409, 'Username is not available. Choose another one.')
+            throw failure
+          }
           return send(201, { message: signup?.session ? 'Account created. You can log in now.' : 'Account submitted. Confirm your email if required, then log in.' })
         }
         if (path.endsWith('/recover')) { await auth.recover(emailValue(body.email)); return send(200, { message: 'If the account exists, a recovery email will be sent.' }) }

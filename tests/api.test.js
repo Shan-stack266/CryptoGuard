@@ -28,7 +28,7 @@ function fixture(role = 'user') {
     const res={ setHeader(name,value) { headers[name]=value }, end(value) { payload=JSON.parse(value) },statusCode:200 }
     await handler(req,res); return { status:res.statusCode,body:payload,headers }
   }
-  return { request,tables,store }
+  return { request,tables,store,auth }
 }
 test('API requires verified identity and denies forged origin', async () => {
   const app=fixture()
@@ -161,4 +161,27 @@ test('User alert monitoring is owner-bound and cannot modify alerts',async()=>{
  const result=await app.request('/api/logs?kind=alerts')
  assert.equal(result.status,200);assert.equal(result.body.rows.length,1);assert.equal(result.body.rows[0].id,'mine')
  assert.equal((await app.request('/api/alerts',{id:'mine',status:'Resolved'},{method:'PATCH'})).status,403)
+})
+
+
+test('Signup validates five fields and passes only normalized identity metadata to Auth',async()=>{
+ const app=fixture();let received
+ app.auth.signup=async (...args)=>{received=args;return{session:{access_token:'not-returned'}}}
+ const details={full_name:"  Jo O'Connor  ",username:' New_User ',email:'NEW@example.test',password:'test-password',confirm_password:'test-password',role:'admin'}
+ const result=await app.request('/api/auth/signup',details,{cookie:''})
+ assert.equal(result.status,201)
+ assert.deepEqual(received,['new@example.test','test-password',{full_name:"Jo O'Connor",username:'new_user'}])
+ assert.ok(!JSON.stringify(result.body).includes('test-password'))
+ for(const invalid of [{...details,confirm_password:'different'},{...details,full_name:' '},{...details,username:'bad space'},{...details,username:'ab'},{email:details.email,password:details.password}]){
+  received=null;assert.equal((await app.request('/api/auth/signup',invalid,{cookie:''})).status,400);assert.equal(received,null)
+ }
+})
+
+test('Signup rejects duplicate usernames and reports missing migration clearly',async()=>{
+ const app=fixture(),details={full_name:'New User',username:'taken_user',email:'new@example.test',password:'test-password',confirm_password:'test-password'}
+ app.tables.cg_profiles.push({id:'another',username:'taken_user'})
+ assert.equal((await app.request('/api/auth/signup',details,{cookie:''})).status,409)
+ app.store.list=async()=>{throw Error('Missing column')}
+ const result=await app.request('/api/auth/signup',{...details,username:'another_user'},{cookie:''})
+ assert.equal(result.status,503);assert.match(result.body.error,/signup-profile-migration/)
 })

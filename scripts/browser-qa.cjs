@@ -34,7 +34,7 @@ async function main() {
   await page.goto(process.env.QA_URL||'http://127.0.0.1:5173/')
   await page.getByRole('button',{name:'Open profile login'}).click()
   await page.getByRole('button',{name:'Sign up',exact:true}).click()
-  assert.equal(await page.getByRole('dialog').locator('input').count(),2)
+  assert.equal(await page.getByRole('dialog').locator('input').count(),5)
   await page.getByRole('button',{name:'Back to login'}).click()
   await page.getByLabel('Email address',{exact:true}).fill('ui-test@example.test')
   await page.getByLabel('Password',{exact:true}).fill('testingpassword')
